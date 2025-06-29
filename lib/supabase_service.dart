@@ -19,4 +19,8 @@ class SupabaseService {
         .order('created_at', ascending: false);
     return List<Map<String, dynamic>>.from(response);
   }
+
+  static Future<void> saveReceipt(Map<String, dynamic> receipt) async {
+    await client.from('receipt').insert(receipt);
+  }
 }

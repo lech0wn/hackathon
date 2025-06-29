@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'supabase_service.dart';
+import 'qr_scan_page.dart';
+import 'receipt_confirm_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -130,11 +132,31 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> fetchReceiptData() async {
     setState(() => isLoading = true);
 
-    await Future.delayed(Duration(seconds: 2));
-
     try {
-      final receiptData = jsonDecode(sampleReceiptJson);
-      Navigator.pushNamed(context, '/receipt', arguments: receiptData);
+      final scannedJson = await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => QRScanPage()),
+      );
+
+      if (scannedJson != null) {
+        final receiptData = jsonDecode(scannedJson);
+
+        // Show full-screen confirmation page
+        final shouldSave = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ReceiptConfirmPage(receiptData: receiptData),
+          ),
+        );
+
+        if (shouldSave == true) {
+          await SupabaseService.saveReceipt(receiptData);
+          _loadReceipts();
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Receipt saved!')));
+        }
+      }
     } catch (e) {
       _showError('Failed to process receipt data: $e');
     } finally {
